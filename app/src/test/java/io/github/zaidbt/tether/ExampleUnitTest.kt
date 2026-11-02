@@ -1,4 +1,4 @@
-package com.example.tether
+package io.github.zaidbt.tether
 
 import org.junit.Test
 

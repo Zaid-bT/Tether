@@ -1,4 +1,4 @@
-package com.example.tether.ui.theme
+package io.github.zaidbt.tether.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

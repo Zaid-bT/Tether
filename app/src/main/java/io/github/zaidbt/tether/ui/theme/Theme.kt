@@ -1,4 +1,4 @@
-package com.example.tether.ui.theme
+package io.github.zaidbt.tether.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
