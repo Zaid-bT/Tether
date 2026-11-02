@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.tether"
+    namespace = "io.github.zaidbt.tether"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.tether"
+        applicationId = "io.github.zaidbt.tether"
         minSdk = 26
         targetSdk = 37
         versionCode = 1
