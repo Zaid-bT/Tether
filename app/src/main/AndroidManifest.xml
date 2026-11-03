@@ -32,6 +32,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--declares that app contains background services
+         android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE": A strict security measure.
+         It tells Android that only the system is allowed to bind to this service, preventing malicious third-party apps from hijacking it.
+
+         <action android:name="android.accessibilityservice.AccessibilityService" />: Tells Android that this service is an Accessibility Service,
+         allowing the system to recognize and list it under the device's Accessibility settings menu-->
+
+        <service
+            android:name=".TetherAccessibilityService"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
     </application>
 
 </manifest>

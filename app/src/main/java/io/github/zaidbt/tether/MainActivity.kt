@@ -2,6 +2,7 @@ package io.github.zaidbt.tether
 
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -101,6 +102,14 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
     val shown = apps.filter { it.label.contains(query, ignoreCase = true) }
 
     Column(modifier.padding(horizontal = 16.dp)) {
+
+        // Debug: last detected foreground app + shortcut to accessibility settings
+        val fg by ForegroundMonitor.current.collectAsState()
+        Text("Foreground: ${fg ?: "none yet"}", style = MaterialTheme.typography.bodySmall)
+        Button(onClick = {
+            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+        }) { Text("Open accessibility settings") }
+
         // Search box: updates `query` on every keystroke
         OutlinedTextField(
             value = query,
