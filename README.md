@@ -14,8 +14,6 @@ passcode ideally set by someone you trust.
 
 ## Commit message convention
 
-Format: `type: short summary` (imperative, under about 70 characters, no period).
-
 | Type | Use for | Example |
 |---|---|---|
 | `feat` | New functionality | `feat: list installed apps with search and selection` |
