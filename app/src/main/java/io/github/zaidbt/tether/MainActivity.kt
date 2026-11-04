@@ -123,8 +123,11 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
         Text(
             "${selected.size} selected",
             style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(vertical = 8.dp)
+            modifier = Modifier.padding(vertical = 8.dp),
+
         )
+        //temp: apply the ticked apps as the block list
+        Button(onClick = { BlockedApps.packages.value = selected }) { Text("Block selected (test)") }
 
         // Scrollable list that only renders the rows currently on screen
         LazyColumn {

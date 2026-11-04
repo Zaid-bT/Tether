@@ -33,6 +33,14 @@
             </intent-filter>
         </activity>
 
+        <!--block activity -->
+        <activity
+            android:name=".BlockActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.Tether" />
+
         <!--declares that app contains background services
          android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE": A strict security measure.
          It tells Android that only the system is allowed to bind to this service, preventing malicious third-party apps from hijacking it.
