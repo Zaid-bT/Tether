@@ -2,8 +2,7 @@ package io.github.zaidbt.tether
 
 import kotlinx.coroutines.flow.MutableStateFlow
 
-//temp in-memory block list for now
+// In-memory copy of the saved rules: package name -> daily limit in minutes (0 = always blocked)
 object BlockedApps {
-    val packages = MutableStateFlow<Set<String>>(emptySet())
+    val limits = MutableStateFlow<Map<String, Int>>(emptyMap())
 }
-

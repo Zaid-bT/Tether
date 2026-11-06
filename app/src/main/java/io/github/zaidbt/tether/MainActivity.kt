@@ -26,6 +26,8 @@ import io.github.zaidbt.tether.ui.theme.TetherTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 
 // Simple holder for one installed app: display name + unique package ID
 // (the package ID is what we'll later use to identify and block an app).
@@ -87,39 +89,43 @@ class MainActivity : ComponentActivity() {
 fun AppPickerScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
 
-    // Load the app list once, off the main thread (Dispatchers.IO), so the UI
-    // doesn't freeze. It starts as an empty list and fills in when ready,
-    // which makes the screen redraw automatically.
+    // Load the app list off the main thread
     val apps by produceState(emptyList<AppItem>()) {
         value = withContext(Dispatchers.IO) { loadLaunchableApps(context) }
     }
 
-    // UI state: whenever these change, Compose redraws whatever uses them.
-    // `query` = text in the search box; `selected` = package IDs the user ticked.
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf(setOf<String>()) }
+    var limitText by remember { mutableStateOf("30") } // daily minutes for ticked apps
+
     val scope = rememberCoroutineScope()
     val db = remember { TetherDatabase.get(context) }
 
-    // Restore the saved selection when the screen opens
+    // Restore saved selection and limit when the screen opens
     LaunchedEffect(Unit) {
-        selected = withContext(Dispatchers.IO) { db.blockRuleDao().getAll() }
-            .map { it.packageName }.toSet()
+        val saved = withContext(Dispatchers.IO) { db.blockRuleDao().getAll() }
+        selected = saved.map { it.packageName }.toSet()
+        saved.firstOrNull()?.let { limitText = it.limitMinutes.toString() }
     }
 
-    // The list actually displayed: apps whose name contains the search text
     val shown = apps.filter { it.label.contains(query, ignoreCase = true) }
 
     Column(modifier.padding(horizontal = 16.dp)) {
 
-        // Debug: last detected foreground app + shortcut to accessibility settings
+        // Debug: last detected foreground app
         val fg by ForegroundMonitor.current.collectAsState()
         Text("Foreground: ${fg ?: "none yet"}", style = MaterialTheme.typography.bodySmall)
-        Button(onClick = {
-            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }) { Text("Open accessibility settings") }
 
-        // Search box: updates `query` on every keystroke
+        // Shortcuts to the two permissions we need (temporary, replaced by the setup checklist)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = {
+                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            }) { Text("Accessibility") }
+            Button(onClick = {
+                context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+            }) { Text("Usage access") }
+        }
+
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
@@ -128,28 +134,34 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Live counter of ticked apps
+        // Daily limit applied to every ticked app (0 = always blocked)
+        OutlinedTextField(
+            value = limitText,
+            onValueChange = { limitText = it.filter(Char::isDigit) },
+            label = { Text("Daily limit in minutes (0 = block fully)") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Text(
             "${selected.size} selected",
             style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(vertical = 8.dp),
-
+            modifier = Modifier.padding(vertical = 8.dp)
         )
 
-        //temp: apply the ticked apps as the block list
-        // Save the ticked apps; the service picks up the change automatically
+        // Save the ticked apps with the limit; the service picks up the change automatically
         Button(onClick = {
-            scope.launch(Dispatchers.IO) { db.replaceRules(selected.map { BlockRule(it) }) }
-        }) { Text("Block selected (test)") }
+            val minutes = limitText.toIntOrNull() ?: 0
+            scope.launch(Dispatchers.IO) {
+                db.replaceRules(selected.map { BlockRule(it, minutes) })
+            }
+        }) { Text("Save limits") }
 
-        // Scrollable list that only renders the rows currently on screen
         LazyColumn {
-            // `key` gives each row a stable identity so scrolling/filtering
-            // doesn't mix up rows
             items(shown, key = { it.packageName }) { app ->
                 val checked = app.packageName in selected
                 AppRow(app, checked) {
-                    // Toggle: remove from the set if ticked, add if not
                     selected = if (checked) selected - app.packageName
                     else selected + app.packageName
                 }
