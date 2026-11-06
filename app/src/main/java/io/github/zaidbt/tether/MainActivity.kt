@@ -25,6 +25,7 @@ import androidx.core.graphics.drawable.toBitmap
 import io.github.zaidbt.tether.ui.theme.TetherTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 
 // Simple holder for one installed app: display name + unique package ID
 // (the package ID is what we'll later use to identify and block an app).
@@ -97,6 +98,14 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
     // `query` = text in the search box; `selected` = package IDs the user ticked.
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf(setOf<String>()) }
+    val scope = rememberCoroutineScope()
+    val db = remember { TetherDatabase.get(context) }
+
+    // Restore the saved selection when the screen opens
+    LaunchedEffect(Unit) {
+        selected = withContext(Dispatchers.IO) { db.blockRuleDao().getAll() }
+            .map { it.packageName }.toSet()
+    }
 
     // The list actually displayed: apps whose name contains the search text
     val shown = apps.filter { it.label.contains(query, ignoreCase = true) }
@@ -126,8 +135,12 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(vertical = 8.dp),
 
         )
+
         //temp: apply the ticked apps as the block list
-        Button(onClick = { BlockedApps.packages.value = selected }) { Text("Block selected (test)") }
+        // Save the ticked apps; the service picks up the change automatically
+        Button(onClick = {
+            scope.launch(Dispatchers.IO) { db.replaceRules(selected.map { BlockRule(it) }) }
+        }) { Text("Block selected (test)") }
 
         // Scrollable list that only renders the rows currently on screen
         LazyColumn {
