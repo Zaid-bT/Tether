@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
                 // Scaffold provides the basic screen layout and tells us how much
                 // space the system bars take (innerPadding) so content isn't hidden
                 Scaffold(modifier = Modifier.fillMaxSize()) { padding ->
-                    AppPickerScreen(Modifier.padding(padding))
+                    AppRoot(Modifier.padding(padding))
                 }
             }
         }
@@ -97,15 +97,35 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
     var query by remember { mutableStateOf("") }
     var selected by remember { mutableStateOf(setOf<String>()) }
     var limitText by remember { mutableStateOf("30") } // daily minutes for ticked apps
+    var showCode by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
     val db = remember { TetherDatabase.get(context) }
 
-    // Restore saved selection and limit when the screen opens
-    LaunchedEffect(Unit) {
+    // Reset the screen to what is saved in the database
+    suspend fun loadSaved() {
         val saved = withContext(Dispatchers.IO) { db.blockRuleDao().getAll() }
         selected = saved.map { it.packageName }.toSet()
         saved.firstOrNull()?.let { limitText = it.limitMinutes.toString() }
+    }
+    LaunchedEffect(Unit) { loadSaved() }
+
+    // Save through the repository; it asks for the code if the change loosens a rule
+    fun save() {
+        val minutes = limitText.toIntOrNull() ?: 0
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                RuleRepository.save(context, selected.map { BlockRule(it, minutes) })
+            }
+            if (result == SaveResult.NeedsCode) showCode = true
+        }
+    }
+
+    if (showCode) {
+        PasscodeDialog(
+            onSuccess = { showCode = false; save() },
+            onDismiss = { showCode = false; scope.launch { loadSaved() } }
+        )
     }
 
     val shown = apps.filter { it.label.contains(query, ignoreCase = true) }
@@ -116,7 +136,7 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
         val fg by ForegroundMonitor.current.collectAsState()
         Text("Foreground: ${fg ?: "none yet"}", style = MaterialTheme.typography.bodySmall)
 
-        // Shortcuts to the two permissions we need (temporary, replaced by the setup checklist)
+        // Temporary shortcuts (replaced by the setup checklist)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = {
                 context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
@@ -124,6 +144,7 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
             Button(onClick = {
                 context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             }) { Text("Usage access") }
+            Button(onClick = { PasscodeManager.lock() }) { Text("Lock now") } // temporary test button
         }
 
         OutlinedTextField(
@@ -150,13 +171,7 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
-        // Save the ticked apps with the limit; the service picks up the change automatically
-        Button(onClick = {
-            val minutes = limitText.toIntOrNull() ?: 0
-            scope.launch(Dispatchers.IO) {
-                db.replaceRules(selected.map { BlockRule(it, minutes) })
-            }
-        }) { Text("Save limits") }
+        Button(onClick = { save() }) { Text("Save limits") }
 
         LazyColumn {
             items(shown, key = { it.packageName }) { app ->
@@ -169,6 +184,7 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
         }
     }
 }
+
 
 // One row in the list: icon, name, package ID, and a checkbox.
 @Composable
@@ -200,4 +216,13 @@ fun AppRow(app: AppItem, checked: Boolean, onToggle: () -> Unit) {
         }
         Checkbox(checked = checked, onCheckedChange = { onToggle() })
     }
+}
+
+// Shows code setup on first run, then the main screen
+@Composable
+fun AppRoot(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    var hasCode by remember { mutableStateOf(PasscodeManager.isSet(context)) }
+    if (hasCode) AppPickerScreen(modifier)
+    else SetupPasscodeScreen(modifier) { hasCode = true }
 }
