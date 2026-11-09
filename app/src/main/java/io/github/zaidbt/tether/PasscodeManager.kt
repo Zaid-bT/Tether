@@ -22,6 +22,7 @@ object PasscodeManager {
     private const val ITERATIONS = 120_000
     private const val SESSION_MS = 5 * 60_000L // how long a correct code keeps editing unlocked
     private const val TRIES_PER_ROUND = 5
+    private const val RESET_MS = 30_000L //12 * 60 * 60_000L // forgot-code wait (use 30_000L only for testing)
 
     // Unlock session lives in memory only, so a process restart relocks
     private var unlockedUntil = 0L // elapsedRealtime
@@ -38,7 +39,7 @@ object PasscodeManager {
         return SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256").generateSecret(spec).encoded
     }
 
-    // Store a new code (only the salt and hash are kept)
+    // Store a new code (only the salt and hash are kept) and clear any pending reset
     suspend fun setPasscode(c: Context, code: String) = withContext(Dispatchers.Default) {
         val salt = ByteArray(16).also { SecureRandom().nextBytes(it) }
         prefs(c).edit()
@@ -46,10 +47,12 @@ object PasscodeManager {
             .putString("hash", Base64.encodeToString(hash(code, salt), Base64.NO_WRAP))
             .putInt("failed", 0)
             .remove("lockEl").remove("lockWall")
+            .remove("resetEl").remove("resetBoot")
             .apply()
+        ResetNotifier.cancel(c)
     }
 
-    // Check a code; a correct one opens the unlock session
+    // Check a code; a correct one opens the unlock session and cancels any pending reset
     suspend fun verify(c: Context, code: String): VerifyResult = withContext(Dispatchers.Default) {
         val left = lockoutSecondsLeft(c)
         if (left > 0) return@withContext VerifyResult.LockedOut(left)
@@ -61,6 +64,7 @@ object PasscodeManager {
         if (MessageDigest.isEqual(saved, hash(code, salt))) {
             p.edit().putInt("failed", 0).apply()
             unlockedUntil = SystemClock.elapsedRealtime() + SESSION_MS
+            cancelReset(c)
             return@withContext VerifyResult.Ok
         }
 
@@ -79,10 +83,50 @@ object PasscodeManager {
         VerifyResult.Wrong(TRIES_PER_ROUND - failed % TRIES_PER_ROUND)
     }
 
+    // ---- Forgot-code reset ----
+
+    // Start the wait (does nothing if one is already running)
+    fun startReset(c: Context) {
+        if (resetRemainingMs(c) != null) return
+        prefs(c).edit()
+            .putLong("resetEl", SystemClock.elapsedRealtime())
+            .putInt("resetBoot", bootCount(c))
+            .apply()
+    }
+
+    fun cancelReset(c: Context) {
+        prefs(c).edit().remove("resetEl").remove("resetBoot").apply()
+        ResetNotifier.cancel(c)
+    }
+
+    // Time left on the wait, or null if no reset is pending
+    fun resetRemainingMs(c: Context): Long? {
+        val p = prefs(c)
+        if (!p.contains("resetEl")) return null
+
+        // A reboot restarts the wait: elapsed time can't be compared across boots
+        if (p.getInt("resetBoot", -1) != bootCount(c)) {
+            p.edit()
+                .putLong("resetEl", SystemClock.elapsedRealtime())
+                .putInt("resetBoot", bootCount(c))
+                .apply()
+        }
+        val readyAt = p.getLong("resetEl", 0) + RESET_MS
+        return (readyAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
+    }
+
+    // Set a new code, only once the wait is over
+    suspend fun completeReset(c: Context, newCode: String): Boolean {
+        val remaining = resetRemainingMs(c) ?: return false
+        if (remaining > 0) return false
+        setPasscode(c, newCode)
+        return true
+    }
+
     private fun bootCount(c: Context) =
         Settings.Global.getInt(c.contentResolver, Settings.Global.BOOT_COUNT, -1)
 
-    // Remaining lockout, using both elapsed time and wall clock so a reboot or a clock change alone can't skip it
+    // Remaining attempt lockout, using both elapsed time and wall clock so a reboot or a clock change alone can't skip it
     private fun lockoutSecondsLeft(c: Context): Long {
         val p = prefs(c)
         val sameBoot = p.getInt("boot", -1) == bootCount(c)
