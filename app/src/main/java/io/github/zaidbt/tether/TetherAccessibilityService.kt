@@ -59,6 +59,14 @@ class TetherAccessibilityService : AccessibilityService() {
             if (!first && !usage.isOpen) return
             first = false
 
+            // Emergency window active: do nothing until it ends, then re-check
+            val grantLeft = EmergencyManager.remainingMs(applicationContext, pkg)
+            if (grantLeft > 0) {
+                Log.d("Tether", "$pkg emergency window ${grantLeft / 1000}s left")
+                delay(grantLeft.coerceAtLeast(1_000))
+                continue
+            }
+
             val remaining = limitMinutes * 60_000L - usage.usedMs
             Log.d("Tether", "$pkg used=${usage.usedMs / 1000}s remaining=${remaining / 1000}s")
             if (remaining <= 0) {

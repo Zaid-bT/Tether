@@ -7,6 +7,7 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -18,10 +19,10 @@ class BlockActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //back button goes to home so no peeking at the app
+        // Back button also goes home, so it can't be used to peek at the app
         onBackPressedDispatcher.addCallback(this) { goHome() }
 
-        //lookup the blocked app display name
+        // Look up the blocked app's display name
         val pkg = intent.getStringExtra(EXTRA_PACKAGE) ?: ""
         val appName = try {
             packageManager.getApplicationLabel(packageManager.getApplicationInfo(pkg, 0)).toString()
@@ -31,6 +32,12 @@ class BlockActivity : ComponentActivity() {
 
         setContent {
             TetherTheme {
+                var usesLeft by remember { mutableIntStateOf(0) }
+                var showDialog by remember { mutableStateOf(false) }
+
+                // Check how many emergency unlocks remain today
+                LaunchedEffect(Unit) { usesLeft = EmergencyManager.usesLeft(applicationContext) }
+
                 Column(
                     Modifier.fillMaxSize().padding(32.dp),
                     verticalArrangement = Arrangement.Center,
@@ -41,12 +48,34 @@ class BlockActivity : ComponentActivity() {
                     Text("Your limit for this app has been reached.")
                     Spacer(Modifier.height(24.dp))
                     Button(onClick = { goHome() }) { Text("Go home") }
+
+                    // Only offered while unlocks remain today
+                    if (usesLeft > 0) {
+                        Spacer(Modifier.height(16.dp))
+                        TextButton(onClick = { showDialog = true }) {
+                            Text("Emergency unlock ($usesLeft left today)")
+                        }
+                    }
+                }
+
+                if (showDialog) {
+                    EmergencyDialog(
+                        pkg = pkg,
+                        onGranted = { openApp(pkg) },
+                        onDismiss = { showDialog = false }
+                    )
                 }
             }
         }
     }
 
-    //send user to home and close page
+    // Reopen the app that was blocked, then close this page
+    private fun openApp(pkg: String) {
+        packageManager.getLaunchIntentForPackage(pkg)?.let { startActivity(it) }
+        finish()
+    }
+
+    // Send the user to the home screen and close this page
     private fun goHome() {
         startActivity(
             Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
