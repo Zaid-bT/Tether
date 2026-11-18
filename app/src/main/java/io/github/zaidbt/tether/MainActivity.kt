@@ -145,6 +145,19 @@ fun AppPickerScreen(modifier: Modifier = Modifier) {
                 context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
             }) { Text("Usage access") }
             Button(onClick = { PasscodeManager.lock() }) { Text("Lock now") } // temporary test button
+
+            // Re-check admin status whenever the foreground app changes (e.g. when returning from Settings)
+            val fgNow by ForegroundMonitor.current.collectAsState()
+            val adminOn = remember(fgNow) { DeviceAdmin.isActive(context) }
+
+            if (adminOn) {
+                Text("Admin: on", style = MaterialTheme.typography.labelLarge)
+            } else {
+                Button(onClick = {
+                    AdminGuard.allowFor(120_000) // let our own activation screen through
+                    context.startActivity(DeviceAdmin.activationIntent(context))
+                }) { Text("Protect") }
+            }
         }
 
         OutlinedTextField(

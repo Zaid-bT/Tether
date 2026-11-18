@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import android.os.SystemClock
 
 class TetherAccessibilityService : AccessibilityService() {
 
@@ -21,6 +22,8 @@ class TetherAccessibilityService : AccessibilityService() {
 
     // Timer watching the currently limited app
     private var watchJob: Job? = null
+    // Avoids opening the prompt twice for back-to-back events
+    private var lastGuardAt = 0L
 
     // Runs every time the service starts, including after Xiaomi restarts the process
     override fun onServiceConnected() {
@@ -38,9 +41,28 @@ class TetherAccessibilityService : AccessibilityService() {
         // Only react when a new window comes to the front
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val pkg = event.packageName?.toString() ?: return
+        val cls = event.className?.toString() ?: ""
+        val title = event.text.joinToString(" ")
 
         Log.d("Tether", "foreground: $pkg")
         ForegroundMonitor.current.value = pkg
+
+        // Discovery log: lets us tune the guard rules per phone
+        if (ScreenGuard.isSystemScreen(pkg)) Log.d("Tether", "screen: $pkg | $cls | $title")
+
+        // Protected settings screen while locked: cover it with the passcode prompt
+        if (ScreenGuard.isProtected(pkg, cls, title, getString(R.string.app_name)) &&
+            PasscodeManager.isSet(this) && !PasscodeManager.isUnlocked() && !AdminGuard.isAllowed()
+        ) {
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastGuardAt > 1_500) {
+                lastGuardAt = now
+                startActivity(
+                    Intent(this, GuardActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+            return
+        }
 
         // Only apps with a rule get watched; other windows (keyboard, shade) are ignored
         val limitMinutes = BlockedApps.limits.value[pkg] ?: return
