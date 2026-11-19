@@ -1,8 +1,10 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.emergency
 
 import android.content.Context
 import android.os.SystemClock
 import android.provider.Settings
+import io.github.zaidbt.tether.data.EmergencyGrant
+import io.github.zaidbt.tether.data.TetherDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -30,7 +32,13 @@ object EmergencyManager {
     // Log the unlock and start the timed window for this app
     suspend fun grant(c: Context, pkg: String, reason: String) = withContext(Dispatchers.IO) {
         TetherDatabase.get(c).emergencyGrantDao()
-            .insert(EmergencyGrant(packageName = pkg, grantedAt = System.currentTimeMillis(), reason = reason))
+            .insert(
+                EmergencyGrant(
+                    packageName = pkg,
+                    grantedAt = System.currentTimeMillis(),
+                    reason = reason
+                )
+            )
         prefs(c).edit()
             .putString("pkg", pkg)
             .putLong("el", SystemClock.elapsedRealtime() + GRANT_MS)

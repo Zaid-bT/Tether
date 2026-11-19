@@ -1,6 +1,7 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.data
 
 import android.content.Context
+import io.github.zaidbt.tether.passcode.PasscodeManager
 
 sealed interface SaveResult {
     data object Saved : SaveResult

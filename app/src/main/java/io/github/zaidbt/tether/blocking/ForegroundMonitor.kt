@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.blocking
 
 import kotlinx.coroutines.flow.MutableStateFlow
 

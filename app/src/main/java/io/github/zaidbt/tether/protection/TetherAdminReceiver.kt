@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.protection
 
 import android.app.admin.DeviceAdminReceiver
 import android.content.Context

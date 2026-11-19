@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.blocking
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
@@ -11,9 +11,15 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import android.os.SystemClock
+import io.github.zaidbt.tether.protection.AdminGuard
+import io.github.zaidbt.tether.emergency.EmergencyManager
+import io.github.zaidbt.tether.protection.GuardActivity
+import io.github.zaidbt.tether.R
+import io.github.zaidbt.tether.protection.ScreenGuard
+import io.github.zaidbt.tether.data.TetherDatabase
+import io.github.zaidbt.tether.passcode.PasscodeManager
 
 class TetherAccessibilityService : AccessibilityService() {
 

@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.blocking
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import io.github.zaidbt.tether.emergency.EmergencyDialog
+import io.github.zaidbt.tether.emergency.EmergencyManager
 import io.github.zaidbt.tether.ui.theme.TetherTheme
 
 // Full-screen page shown when a blocked app is opened

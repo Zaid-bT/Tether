@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

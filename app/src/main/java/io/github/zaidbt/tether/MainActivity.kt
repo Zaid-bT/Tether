@@ -28,6 +28,16 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
+import io.github.zaidbt.tether.blocking.ForegroundMonitor
+import io.github.zaidbt.tether.data.BlockRule
+import io.github.zaidbt.tether.data.RuleRepository
+import io.github.zaidbt.tether.data.SaveResult
+import io.github.zaidbt.tether.data.TetherDatabase
+import io.github.zaidbt.tether.passcode.PasscodeDialog
+import io.github.zaidbt.tether.passcode.PasscodeManager
+import io.github.zaidbt.tether.passcode.SetupPasscodeScreen
+import io.github.zaidbt.tether.protection.AdminGuard
+import io.github.zaidbt.tether.protection.DeviceAdmin
 
 // Simple holder for one installed app: display name + unique package ID
 // (the package ID is what we'll later use to identify and block an app).

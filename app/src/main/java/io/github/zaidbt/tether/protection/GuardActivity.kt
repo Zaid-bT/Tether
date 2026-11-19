@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.protection
 
 import android.content.Intent
 import android.os.Bundle
@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
+import io.github.zaidbt.tether.passcode.PasscodeDialog
 import io.github.zaidbt.tether.ui.theme.TetherTheme
 
 // Passcode prompt shown over a protected settings screen

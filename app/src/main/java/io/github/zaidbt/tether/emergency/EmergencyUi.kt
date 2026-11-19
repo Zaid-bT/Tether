@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.emergency
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*

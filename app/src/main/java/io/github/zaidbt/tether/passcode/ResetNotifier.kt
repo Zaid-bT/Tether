@@ -1,5 +1,6 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.passcode
 
+import android.R
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -16,7 +17,7 @@ object ResetNotifier {
             NotificationChannel(CHANNEL, "Passcode reset", NotificationManager.IMPORTANCE_LOW)
         )
         val n = Notification.Builder(c, CHANNEL)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+            .setSmallIcon(R.drawable.ic_lock_idle_lock)
             .setContentTitle("Passcode reset pending")
             .setContentText("A new code can be set when the countdown ends")
             .setOngoing(true)

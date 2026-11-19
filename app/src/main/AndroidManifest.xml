@@ -40,7 +40,7 @@
 
         <!--block activity -->
         <activity
-            android:name=".BlockActivity"
+            android:name=".blocking.BlockActivity"
             android:exported="false"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
@@ -54,7 +54,7 @@
          allowing the system to recognize and list it under the device's Accessibility settings menu-->
 
         <service
-            android:name=".TetherAccessibilityService"
+            android:name=".blocking.TetherAccessibilityService"
             android:exported="false"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
@@ -67,14 +67,14 @@
         </service>
 
         <activity
-            android:name=".GuardActivity"
+            android:name=".protection.GuardActivity"
             android:exported="false"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:theme="@style/Theme.Tether" />
 
         <receiver
-            android:name=".TetherAdminReceiver"
+            android:name=".protection.TetherAdminReceiver"
             android:exported="true"
             android:permission="android.permission.BIND_DEVICE_ADMIN">
             <meta-data

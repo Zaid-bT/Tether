@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.data
 
 import androidx.room.Dao
 import androidx.room.Insert

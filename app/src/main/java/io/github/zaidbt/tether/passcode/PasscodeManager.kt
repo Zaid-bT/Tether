@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.passcode
 
 import android.content.Context
 import android.os.SystemClock

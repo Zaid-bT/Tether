@@ -1,4 +1,4 @@
-package io.github.zaidbt.tether
+package io.github.zaidbt.tether.blocking
 
 import android.annotation.SuppressLint
 import android.app.AppOpsManager
