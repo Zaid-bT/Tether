@@ -6,6 +6,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+//DAO = Data Access Object, abstract class defines methods use to interact with database table
+// instead of writing SQL queries
 @Dao
 interface BlockRuleDao {
     // Live list: emits again whenever the table changes
