@@ -1,3 +1,6 @@
+//the masked input field, the first-run setup screen, the code prompt, and the forgot-code dialog.
+//It contains no lock logic of its own and only calls PasscodeManager.
+
 package io.github.zaidbt.tether.passcode
 
 import android.Manifest
@@ -18,27 +21,27 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 // Masked numeric field used for entering codes
-@Composable
-fun CodeField(value: String, onChange: (String) -> Unit, label: String) {
+@Composable  //Composable marks a function that describes UI
+fun CodeField(value: String, onChange: (String) -> Unit, label: String) {  //state hoisting: CodeField doesnt hold the string
     OutlinedTextField(
         value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(12)) },
+        onValueChange = { onChange(it.filter(Char::isDigit).take(12)) },  //runs at every keystroke(types,pasted and/or deleted)
         label = { Text(label) },
         singleLine = true,
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+        visualTransformation = PasswordVisualTransformation(),  //PasswordVisualTransformation(): shows dots instead of digits
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),  //NumberPassword brings up a numeric keyboard that hides what you type
         modifier = Modifier.fillMaxWidth()
     )
-}
+}//called by PasscodeUi (line 55,57,94,162,164)
 
-// First-run screen: a trusted person picks the code
+// First-run screen
 @Composable
 fun SetupPasscodeScreen(modifier: Modifier = Modifier, onDone: () -> Unit) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var code by remember { mutableStateOf("") }
-    var confirm by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current  //grabs the Android context needed by PasscodeManager(SharedPreference)
+    val scope = rememberCoroutineScope()  //provides a Coroutine scope that allows launching suspend calls (setPasscode in PasscodeManager); suspend calls cannot be called directly with onClock without context
+    var code by remember { mutableStateOf("") }  //remember keeps the state alive across recomposition/re-run, instead of resetting "" everytime
+    var confirm by remember { mutableStateOf("") }  //holds the "confirm passcode" input string
+    var error by remember { mutableStateOf<String?>(null) }  //codes dont match/short passcode
 
     Column(
         modifier.fillMaxSize().padding(24.dp),
@@ -65,25 +68,26 @@ fun SetupPasscodeScreen(modifier: Modifier = Modifier, onDone: () -> Unit) {
             }
         }) { Text("Set code") }
     }
-}
+}//called by MainActivity (line 250)
 
-// Popup asking for the code before a loosening change
+
+// Popup asking for the code before lowering time limit
 @Composable
 fun PasscodeDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var code by remember { mutableStateOf("") }
-    var message by remember { mutableStateOf<String?>(null) }
+    var message by remember { mutableStateOf<String?>(null) }  //error msg
     var showForgot by remember { mutableStateOf(false) }
 
-    // Forgot-code flow replaces the prompt while it is open
+    //if showForgot is true, show the forgot code dialog instead
     if (showForgot) {
         ForgotCodeDialog(onClose = { showForgot = false })
         return
     }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = onDismiss,  //when user taps outside or presses back
         title = { Text("Enter passcode") },
         text = {
             Column {
@@ -104,35 +108,35 @@ fun PasscodeDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
         },
         dismissButton = {
             Row {
-                TextButton(onClick = { showForgot = true }) { Text("Forgot code") }
+                TextButton(onClick = { showForgot = true }) { Text("Forgot code") }  //sets showForgot true for next run
                 TextButton(onClick = onDismiss) { Text("Cancel") }
             }
         }
     )
-}
+}//called by MainActivity (line 135), GuardActivity (line 24)
 
 // Start, watch, cancel and finish the 12-hour code reset
 @Composable
 fun ForgotCodeDialog(onClose: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var remaining by remember { mutableStateOf(PasscodeManager.resetRemainingMs(context)) }
+    var remaining by remember { mutableStateOf(PasscodeManager.resetRemainingMs(context)) }  //holds the time left on the wait
     var code by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // Re-show the countdown notification once permission is granted (Android 13+)
+    // Re-show the countdown notification once permission is granted (Android 13+) ("allow notification?" prompt)
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        remaining?.takeIf { it > 0 }
+        remaining?.takeIf { it > 0 } //keep value only when positive
             ?.let { ResetNotifier.show(context, System.currentTimeMillis() + it) }
     }
 
     // Refresh the countdown every second while the dialog is open
-    LaunchedEffect(Unit) {
+    LaunchedEffect(Unit) { //runs when dialog appears
         remaining?.takeIf { it > 0 }
             ?.let { ResetNotifier.show(context, System.currentTimeMillis() + it) }
         while (true) {
-            delay(1000)
+            delay(1000)  //refresh every second
             remaining = PasscodeManager.resetRemainingMs(context)
         }
     }
@@ -143,7 +147,7 @@ fun ForgotCodeDialog(onClose: () -> Unit) {
         return "%d:%02d:%02d".format(s / 3600, s % 3600 / 60, s % 60)
     }
 
-    val left = remaining
+    val left = remaining  //copies state into local value
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text("Forgot code") },
@@ -164,20 +168,21 @@ fun ForgotCodeDialog(onClose: () -> Unit) {
             }
         },
         confirmButton = {
+            //button changes with the state
             when {
-                left == null -> TextButton(onClick = {
+                left == null -> TextButton(onClick = {  //no wait time set: start it and post notification
                     PasscodeManager.startReset(context)
                     remaining = PasscodeManager.resetRemainingMs(context)
                     remaining?.let { ResetNotifier.show(context, System.currentTimeMillis() + it) }
                     if (Build.VERSION.SDK_INT >= 33) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }) { Text("Start 12-hour wait") }
 
-                left > 0 -> TextButton(onClick = {
+                left > 0 -> TextButton(onClick = {  //wait time currently running
                     PasscodeManager.cancelReset(context)
                     remaining = null
                 }) { Text("Cancel reset") }
 
-                else -> TextButton(onClick = {
+                else -> TextButton(onClick = {  //wait time is over
                     when {
                         code.length < 4 -> error = "Use at least 4 digits"
                         code != confirm -> error = "Codes don't match"
@@ -190,4 +195,4 @@ fun ForgotCodeDialog(onClose: () -> Unit) {
         },
         dismissButton = { TextButton(onClick = onClose) { Text("Back") } }
     )
-}
+}//called by PasscodeUi (line 85)
