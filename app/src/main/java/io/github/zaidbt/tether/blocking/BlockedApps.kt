@@ -8,6 +8,4 @@ object BlockedApps { //singleton object
     //Map<String, Int> maps package name to daily limit in minutes
     //Map lookup is direct and faster and no duplicates
     val limits = MutableStateFlow<Map<String, Int>>(emptyMap())
-    //write by: TetherAccessibilityService (line 41)
-    //read by: TetherAccessibilityService (line 74)
 }

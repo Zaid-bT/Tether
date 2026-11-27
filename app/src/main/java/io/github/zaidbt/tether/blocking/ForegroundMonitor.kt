@@ -7,7 +7,5 @@ object ForegroundMonitor { //singleton object
     //MutableStateFlow is a box holding one current value that other code can observe. When the value changes, observers are notified.
     val current = MutableStateFlow<String?>(null)
     //StateFlow ignores a write operation that equals the current value, so repeated events for the same app don't wake observers
-    //write by: TetherAccessibilityService (line 54)
-    //read by: MainActivity (line 146,160)
 }
 

@@ -13,7 +13,7 @@ import java.time.ZoneId
 
 // Time used today, and whether the app is open right now
 data class Usage(val usedMs: Long, val isOpen: Boolean) //usedMs: foreground in ms today, isOpen: if the app is in the foreground rn
-//called by TetherAccessibilityService (line 87,98)
+
 
 object UsageTracker {
     //True if the user has granted "Usage access" to Tether
@@ -61,4 +61,4 @@ object UsageTracker {
         if (resumedAt >= 0) total += now - resumedAt
         return Usage(total, resumedAt >= 0)
     }
-}//called by TetherAccessibilityService (line 83)
+}
