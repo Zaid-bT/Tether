@@ -32,7 +32,7 @@ fun CodeField(value: String, onChange: (String) -> Unit, label: String) {  //sta
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),  //NumberPassword brings up a numeric keyboard that hides what you type
         modifier = Modifier.fillMaxWidth()
     )
-}//called by PasscodeUi (line 55,57,94,162,164)
+}
 
 // First-run screen
 @Composable
@@ -68,8 +68,7 @@ fun SetupPasscodeScreen(modifier: Modifier = Modifier, onDone: () -> Unit) {
             }
         }) { Text("Set code") }
     }
-}//called by MainActivity (line 250)
-
+}
 
 // Popup asking for the code before lowering time limit
 @Composable
@@ -113,7 +112,7 @@ fun PasscodeDialog(onSuccess: () -> Unit, onDismiss: () -> Unit) {
             }
         }
     )
-}//called by MainActivity (line 135), GuardActivity (line 24)
+}
 
 // Start, watch, cancel and finish the 12-hour code reset
 @Composable
@@ -195,4 +194,4 @@ fun ForgotCodeDialog(onClose: () -> Unit) {
         },
         dismissButton = { TextButton(onClick = onClose) { Text("Back") } }
     )
-}//called by PasscodeUi (line 85)
+}

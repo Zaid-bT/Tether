@@ -33,12 +33,12 @@ object PasscodeManager {
     private fun prefs(c: Context) = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     fun isSet(c: Context) = prefs(c).contains("hash")  //code exists if hash entry is saved
-    //called by MainActivity (line 248), RuleRepository (line 23), TetherAccessibilityService (line 61)
+
 
     fun isUnlocked() = SystemClock.elapsedRealtime() < unlockedUntil  //checks against (updated) unlockedUntil (line 69 updates its value)
-    //called by RuleRepository (line 23), TetherAccessibilityService (line 61)
 
-    fun lock() { unlockedUntil = 0L }  //called by MainActivity (line 157)
+
+    fun lock() { unlockedUntil = 0L }
 
     // Salted PBKDF2 hash of the code
     private fun hash(code: String, salt: ByteArray): ByteArray { //salt is random data mixed in to make each hash unique
@@ -58,7 +58,7 @@ object PasscodeManager {
             .remove("resetEl").remove("resetBoot") //clear any pending forgot passcode reset timers and boot trackers
             .apply()  //saves asynchronously, updates the in-memory values right away
         ResetNotifier.cancel(c) //removes countdown notification
-    }//called by PasscodeUi (line 62)
+    }
 
     // Check a code; a correct one opens the unlock session and cancels any pending reset
     suspend fun verify(c: Context, code: String): VerifyResult = withContext(Dispatchers.Default) {
@@ -92,7 +92,7 @@ object PasscodeManager {
         }
         edit.apply()
         VerifyResult.Wrong(TRIES_PER_ROUND - failed % TRIES_PER_ROUND)
-    }//called by PasscodeUi (line 97)
+    }
 
     // ---- Forgot-code reset ----
 
@@ -103,13 +103,13 @@ object PasscodeManager {
             .putLong("resetEl", SystemClock.elapsedRealtime())
             .putInt("resetBoot", bootCount(c))
             .apply()
-    }//called by PasscodeUi (line 169)
+    }
 
     //deletes reset counter and notification
     fun cancelReset(c: Context) {
         prefs(c).edit().remove("resetEl").remove("resetBoot").apply()
         ResetNotifier.cancel(c)
-    }//called by PasscodeUi (line 176)
+    }
 
     // Time left on the wait, or null if no reset is pending
     fun resetRemainingMs(c: Context): Long? {
@@ -125,7 +125,7 @@ object PasscodeManager {
         }
         val readyAt = p.getLong("resetEl", 0) + RESET_MS //when reset code timer ends
         return (readyAt - SystemClock.elapsedRealtime()).coerceAtLeast(0)
-    }//called by PasscodeUi (line 119)
+    }
 
     // Set a new code, only once the wait is over
     suspend fun completeReset(c: Context, newCode: String): Boolean {
@@ -133,7 +133,7 @@ object PasscodeManager {
         if (remaining > 0) return false
         setPasscode(c, newCode)
         return true
-    }//called by PasscodeUi (line 185)
+    }
 
     //number of boots
     private fun bootCount(c: Context) =

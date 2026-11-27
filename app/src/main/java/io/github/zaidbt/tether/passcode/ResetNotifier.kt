@@ -30,9 +30,9 @@ object ResetNotifier {
             .setChronometerCountDown(true)  //live countdown towards availableAtWallMs
             .build()
         nm.notify(ID, n) //notify() posts it, silently does nothing if notifications are not allowed (no crash)
-    }//called by PasscodeUi (line 127,133,171)
+    }
 
     fun cancel(c: Context) {  //removes the notification
         c.getSystemService(NotificationManager::class.java).cancel(ID)
-    }//called by PasscodeManager (line 60,111)
+    }
 }
